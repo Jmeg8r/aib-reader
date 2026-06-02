@@ -1,0 +1,29 @@
+# aib-reader feed list (EXAMPLE).
+#
+# The real config/feeds.yaml is generated from your Feedly OPML export (v0.0b prep,
+# task #3) and is the CANONICAL source of truth for the feed list; the SQLite store
+# is a cache of it. A feed may belong to multiple categories (category is a
+# first-class query dimension — different projects/agents query different slices).
+#
+# Schema:
+#   feeds:
+#     - url:        <feed xmlUrl>      (required)
+#       title:      <human title>      (optional; falls back to the feed's own title)
+#       categories: [<label>, ...]     (routing labels)
+
+feeds:
+  - url: https://www.anthropic.com/rss.xml
+    title: Anthropic Blog
+    categories: [AI World]
+  - url: https://openai.com/blog/rss.xml
+    title: OpenAI Blog
+    categories: [AI World]
+  - url: https://hnrss.org/newest?q=AI
+    title: Hacker News (AI search)
+    categories: [AI World, tech]
+  - url: https://simonwillison.net/atom/everything/
+    title: Simon Willison
+    categories: [AI World]
+  - url: https://www.theregister.com/headlines.atom
+    title: The Register
+    categories: [tech, IT Security]
