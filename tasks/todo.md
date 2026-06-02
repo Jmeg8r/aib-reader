@@ -23,7 +23,7 @@
 - [x] Real now: models, logging, config, `parse_since`, `canonical_url`/`content_hash`,
       SQLite schema, CLI `doctor`
 - [x] Tests (time, dedup, smoke) green
-- [ ] Verify: `uv run aib-reader --help`, `uv run aib-reader doctor`, `uv run pytest`
+- [x] Verify: `uv run aib-reader --help`, `uv run aib-reader doctor`, `uv run pytest` (32 passed)
 
 ### Step 1 — v0.0a: Horizon foundation evaluation
 - [ ] Clone Thysrael/Horizon to /tmp/horizon-eval; read source; run vs ~5 real feeds
