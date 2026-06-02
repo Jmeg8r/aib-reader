@@ -25,9 +25,12 @@
 - [x] Tests (time, dedup, smoke) green
 - [x] Verify: `uv run aib-reader --help`, `uv run aib-reader doctor`, `uv run pytest` (32 passed)
 
-### Step 1 — v0.0a: Horizon foundation evaluation
-- [ ] Clone Thysrael/Horizon to /tmp/horizon-eval; read source; run vs ~5 real feeds
-- [ ] Write `docs/horizon-evaluation.md` (3-way verdict; concrete reason adoption rejected)
+### Step 1 — v0.0a: Horizon foundation evaluation  ✅ VERDICT: REFERENCE
+- [x] Clone Thysrael/Horizon to /tmp/horizon-eval; read source; run vs 5 real feeds (80 items, no key)
+- [x] Write `docs/horizon-evaluation.md` (3-way verdict; concrete reason adoption rejected)
+- Key finding: Horizon has NO queryable item store (saves daily summary markdown only) and no
+  consumer cursors — our entire contract has no equivalent. Value is AI-pipeline-coupled. Port
+  its date-parsing/per-feed-isolation/URL-normalization ideas; build the store ourselves.
 
 ### Step 2 — v0.0b prep: feeds.yaml from OPML
 - [ ] Implement `opml.parse_opml` + `opml.opml_to_feeds_yaml`
