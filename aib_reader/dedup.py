@@ -105,3 +105,13 @@ def is_same_story(a: str | None, b: str | None, threshold: int = FUZZY_TITLE_THR
     this to a short time window + same category (exact-duplicate suppression,
     NOT topic clustering)."""
     return title_similarity(a, b) >= threshold
+
+
+def feed_id(url: str) -> str:
+    """Stable 16-hex id for a feed URL (sha256 of its canonical_url).
+
+    WHY: Feed identity must be deterministic and URL-based so the same id is
+    produced whether the feed is first seen via OPML import or a later add_feed
+    call. Consistent with the content_hash pattern above.
+    """
+    return hashlib.sha256(canonical_url(url).encode()).hexdigest()[:16]

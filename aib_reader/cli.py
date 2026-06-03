@@ -11,10 +11,13 @@ install + store can be created.
 
 from __future__ import annotations
 
+from pathlib import Path
+
 import typer
 
 from aib_reader import __version__
 from aib_reader._logging import get_logger
+from aib_reader.config import DEFAULT_FEEDS_CONFIG
 
 app = typer.Typer(
     help="Self-owned RSS aggregation for the ASTGL ecosystem.",
@@ -110,6 +113,22 @@ def doctor() -> None:
 
     typer.secho(f"store:         OK ({len(tables)} tables: {', '.join(tables)})", fg=typer.colors.GREEN)
     typer.secho("doctor:        scaffold OK. Per-feed health lands in v0.0b.", fg=typer.colors.GREEN)
+
+
+@app.command(name="import-opml")
+def import_opml_cmd(
+    opml_path: Path = typer.Argument(..., help="Path to the .opml export file."),
+    output: Path = typer.Option(DEFAULT_FEEDS_CONFIG, "--output", "-o", help="Destination feeds.yaml."),
+) -> None:
+    """Convert a Feedly OPML export to config/feeds.yaml."""
+    from aib_reader.opml import opml_to_feeds_yaml
+
+    if not opml_path.exists():
+        typer.secho(f"import-opml: file not found: {opml_path}", fg=typer.colors.RED)
+        raise typer.Exit(code=1)
+
+    count = opml_to_feeds_yaml(opml_path, output)
+    typer.secho(f"import-opml: wrote {count} feeds to {output}", fg=typer.colors.GREEN)
 
 
 if __name__ == "__main__":  # pragma: no cover

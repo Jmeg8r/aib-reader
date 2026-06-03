@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<opml version="1.0">
+    <head>
+        <title>Sample test subscriptions</title>
+    </head>
+    <body>
+        <!-- Normal category with two distinct feeds -->
+        <outline text="AI World" title="AI World">
+            <outline type="rss" text="Hugging Face Blog" title="Hugging Face Blog"
+                xmlUrl="https://huggingface.co/blog/feed.xml"
+                htmlUrl="https://huggingface.co/blog"/>
+            <outline type="rss" text="DeepMind Blog" title="DeepMind Blog"
+                xmlUrl="https://deepmind.com/blog/feed/basic/"
+                htmlUrl="https://deepmind.google/blog/"/>
+        </outline>
+
+        <!-- Second category that shares one URL with AI World (dedup test) -->
+        <outline text="tech" title="tech">
+            <outline type="rss" text="Hugging Face Blog" title="Hugging Face Blog"
+                xmlUrl="https://huggingface.co/blog/feed.xml"
+                htmlUrl="https://huggingface.co/blog"/>
+            <outline type="rss" text="The Verge" title="The Verge"
+                xmlUrl="http://www.theverge.com/rss/full.xml"
+                htmlUrl="https://www.theverge.com"/>
+        </outline>
+
+        <!-- Feedly-internal URL (should be skipped) -->
+        <outline text="Politics" title="Politics">
+            <outline type="rss" text="SomeAlert" title="SomeAlert"
+                xmlUrl="https://feedly.com/f/alert/abc123"
+                htmlUrl="https://feedly.com"/>
+            <outline type="rss" text="Simon Willison" title="Simon Willison"
+                xmlUrl="https://simonwillison.net/feed/"
+                htmlUrl="https://simonwillison.net"/>
+        </outline>
+
+        <!-- Empty category (no feed children) -->
+        <outline text="interesting" title="interesting"/>
+    </body>
+</opml>
