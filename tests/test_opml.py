@@ -26,13 +26,11 @@ def test_feed_id_differs_for_different_urls():
     assert feed_id("https://example.com/feed.xml") != feed_id("https://other.com/rss")
 
 
-def test_feed_id_is_canonical_url_invariant():
-    # http vs https with www prefix should normalize to same id (canonical_url handles this)
-    a = feed_id("http://www.huggingface.co/blog/feed.xml")
-    b = feed_id("https://huggingface.co/blog/feed.xml")
-    # canonical_url strips www and lowercases but preserves scheme — so these differ on scheme.
-    # The important assertion is that repeated calls with the SAME url are stable.
-    assert feed_id(a) == feed_id(a)
+def test_feed_id_ignores_www_prefix():
+    # canonical_url strips a leading www, so these two spellings share an id.
+    assert feed_id("https://www.huggingface.co/blog/feed.xml") == feed_id(
+        "https://huggingface.co/blog/feed.xml"
+    )
 
 
 # ---------------------------------------------------------------------------

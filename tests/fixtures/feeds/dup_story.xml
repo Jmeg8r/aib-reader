@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Hype Aggregator</title>
+    <link>https://hype.example.com</link>
+    <description>Reposts the same stories under different URLs</description>
+    <item>
+      <title>Anthropic ships Claude 5 today</title>
+      <link>https://hype.example.com/repost/anthropic-claude-5</link>
+      <guid>hype-12345</guid>
+      <description>Syndicated copy of the Claude 5 story.</description>
+      <pubDate>Mon, 02 Jun 2026 13:30:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

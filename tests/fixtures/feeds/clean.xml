@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Clean AI Feed</title>
+    <link>https://clean.example.com</link>
+    <description>A well-formed feed</description>
+    <item>
+      <title>Anthropic ships Claude 5</title>
+      <link>https://clean.example.com/claude-5?utm_source=rss</link>
+      <guid>https://clean.example.com/claude-5</guid>
+      <description>A big model release.</description>
+      <author>jane@example.com</author>
+      <pubDate>Mon, 02 Jun 2026 12:00:00 GMT</pubDate>
+    </item>
+    <item>
+      <title>OpenAI announces GPT-6</title>
+      <link>https://clean.example.com/gpt-6</link>
+      <guid>https://clean.example.com/gpt-6</guid>
+      <description>Another big release.</description>
+      <pubDate>Mon, 02 Jun 2026 09:00:00 GMT</pubDate>
+    </item>
+  </channel>
+</rss>

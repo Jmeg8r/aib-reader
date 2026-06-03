@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+  <channel>
+    <title>Ugly Feed (no dates, weird guids)</title>
+    <link>https://ugly.example.com</link>
+    <description>Entries missing pubDate and with non-URL guids</description>
+    <item>
+      <title>Undated post about local models</title>
+      <link>https://ugly.example.com/local-models</link>
+      <description>No pubDate at all on this one.</description>
+    </item>
+    <item>
+      <title>Post with a bare-string guid and no link</title>
+      <guid isPermaLink="false">internal-id-998877</guid>
+      <description>No link element either — identity falls back to guid.</description>
+    </item>
+  </channel>
+</rss>

@@ -15,7 +15,7 @@ runner = CliRunner()
 
 
 def test_public_contract_is_importable():
-    for name in ("fetch_recent_items", "mark_processed", "search_items", "list_feeds", "add_feed"):
+    for name in ("fetch_recent_items", "mark_processed", "search_items", "list_feeds", "add_feed", "poll_feeds"):
         assert hasattr(aib_reader, name), f"missing public export: {name}"
     assert aib_reader.__version__ == "0.0.1"
 
@@ -65,8 +65,11 @@ def test_cli_doctor_runs(tmp_path, monkeypatch):
     assert "OK" in result.output
 
 
-def test_cli_fetch_reports_not_implemented(tmp_path, monkeypatch):
+def test_cli_fetch_with_no_feeds_config_is_graceful(tmp_path, monkeypatch):
+    # Isolate from the real config/feeds.yaml so the test never hits the network:
+    # point at a non-existent feeds config -> poll_feeds returns an empty summary.
     monkeypatch.setenv("AIB_READER_DB_PATH", str(tmp_path / "f.db"))
+    monkeypatch.setenv("AIB_READER_FEEDS_CONFIG", str(tmp_path / "missing.yaml"))
     result = runner.invoke(app, ["fetch"])
-    # poll_feeds is a v0.0b stub -> graceful exit code 2, not a crash.
-    assert result.exit_code == 2
+    assert result.exit_code == 0
+    assert "0 feeds" in result.output
