@@ -7,6 +7,14 @@
 secrets.*
 config/secrets.yaml
 
+# --- PERSONAL feed list — never commit (this repo is public) ---
+# config/feeds.yaml is the user's private subscription list (politics/veteran/health/
+# location). The repo ships config/feeds.yaml.example only; users generate their own
+# via `aib-reader import-opml <their-export.opml>`. Purged from history 2026-06-03.
+config/feeds.yaml
+*.opml
+!tests/fixtures/*.opml
+
 # --- Local runtime data (the SQLite store lives in the user's home) ---
 # ~/.aib-reader/store.db is outside the repo, but ignore any local copies:
 *.db
