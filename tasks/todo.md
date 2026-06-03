@@ -67,8 +67,29 @@
 - [ ] **Action for James:** restart Claude Code, then in a fresh session ask
       "What's been published about Anthropic this week?" → real items via the MCP tools.
 
-### Step 5 — Integration handshake
-- [ ] Add aib-reader to aib-pipeline as a uv path dependency; verify zero-overhead contract
+### Step 5 — Integration handshake  ✅ COMPLETE (2026-06-03)
+- [x] aib-pipeline now declares aib-reader as an editable uv **path dependency**
+      (`[tool.uv.sources] aib-reader = { path = "../aib-reader", editable = true }`).
+- [x] `aib_pipeline/source.py` seam wraps the contract (`fetch_recent_items` /
+      `mark_processed` / `poll_feeds`), consumer pinned to `"aib-pipeline"`.
+- [x] Zero-overhead verified from the consumer: importing `aib_pipeline.source` does
+      NOT load the `mcp` SDK (asserted in a subprocess, both repos' test suites).
+- [x] Live: the seam reads 100 real "AI World" items from the shared store; consumer-
+      scoped `mark_processed` confirmed (aib-pipeline's marks don't hide items from
+      other consumers).
+- See `aib-pipeline/tasks/todo.md` (D7 superseded, OQ#5 resolved) and
+  `aib-pipeline/tests/test_aib_reader_integration.py`.
+
+---
+
+## v1 milestone status
+
+v0.0a (Horizon eval) → v0.0b (library) → v0.0c (MCP) → integration handshake are all
+**done**. The contract `from aib_reader import fetch_recent_items, mark_processed` is
+live, tested both sides, and consumed by aib-pipeline with zero MCP overhead. Remaining
+open threads are operational, not build: the 7-run robustness-gate sample (daily launchd
+job, evaluate ~2026-06-10) and pruning permanently-dead feeds via `doctor --deactivate`
+once they cross the failure threshold.
 
 ## Review (filled in as milestones land)
 - Step 0: _pending verification_
