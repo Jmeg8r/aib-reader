@@ -12,7 +12,6 @@ Design notes (from docs/horizon-evaluation.md and CLAUDE.md):
 
 from __future__ import annotations
 
-import logging
 import xml.etree.ElementTree as ET
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -104,11 +103,12 @@ def parse_opml(path: Path) -> list[Feed]:
     return feeds
 
 
-def opml_to_feeds_yaml(opml_path: Path, yaml_path: Path) -> int:
-    """Convert an OPML export to the canonical ``config/feeds.yaml``. Returns the
-    number of feeds written."""
-    feeds = parse_opml(opml_path)
+def write_feeds_yaml(feeds: list[Feed], yaml_path: Path, *, source: str | None = None) -> int:
+    """Write a list of ``Feed`` to a canonical feeds.yaml. Returns count written.
 
+    Shared writer for both OPML import and ``api.add_feed`` — one place owns the
+    inline-category style and the file format.
+    """
     yaml.add_representer(_FlowList, _flow_list_representer)
 
     records = []
@@ -119,8 +119,9 @@ def opml_to_feeds_yaml(opml_path: Path, yaml_path: Path) -> int:
         entry["categories"] = _FlowList(f.categories)
         records.append(entry)
 
+    origin = source or "aib-reader"
     header = (
-        f"# Generated from {opml_path.name} — edit manually or re-run import-opml to regenerate.\n"
+        f"# Generated from {origin} — edit manually or re-run import-opml to regenerate.\n"
         "# Schema: url (required), title (optional), categories (routing labels).\n"
     )
 
@@ -129,5 +130,40 @@ def opml_to_feeds_yaml(opml_path: Path, yaml_path: Path) -> int:
         fh.write(header)
         yaml.dump({"feeds": records}, fh, allow_unicode=True, default_flow_style=False, sort_keys=False)
 
-    log.info("opml_to_feeds_yaml: wrote %d feeds to %s", len(feeds), yaml_path)
+    log.info("write_feeds_yaml: wrote %d feeds to %s", len(feeds), yaml_path)
     return len(feeds)
+
+
+def load_feeds_yaml(yaml_path: Path) -> list[Feed]:
+    """Read the canonical feeds.yaml into ``Feed`` records.
+
+    Reader counterpart to ``write_feeds_yaml``. The feed id is recomputed from the
+    URL via ``feed_id`` so it always matches whatever the store/import produce.
+    Malformed entries (missing url) are skipped with a warning, never fatal.
+    """
+    with yaml_path.open("r", encoding="utf-8") as fh:
+        data = yaml.safe_load(fh) or {}
+
+    feeds: list[Feed] = []
+    for entry in data.get("feeds", []):
+        url = (entry.get("url") or "").strip()
+        if not url:
+            log.warning("load_feeds_yaml: skipping entry with no url: %r", entry)
+            continue
+        feeds.append(
+            Feed(
+                id=feed_id(url),
+                url=url,
+                title=entry.get("title"),
+                categories=list(entry.get("categories") or []),
+            )
+        )
+    log.info("load_feeds_yaml: loaded %d feeds from %s", len(feeds), yaml_path)
+    return feeds
+
+
+def opml_to_feeds_yaml(opml_path: Path, yaml_path: Path) -> int:
+    """Convert an OPML export to the canonical ``config/feeds.yaml``. Returns the
+    number of feeds written."""
+    feeds = parse_opml(opml_path)
+    return write_feeds_yaml(feeds, yaml_path, source=opml_path.name)

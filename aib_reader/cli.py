@@ -86,9 +86,17 @@ def search(
 
 
 @app.command()
-def doctor() -> None:
-    """Health check: verify config, then create/inspect the local store."""
-    from aib_reader.config import load_config
+def doctor(
+    deactivate: bool = typer.Option(
+        False, "--deactivate", help="Deactivate feeds over the consecutive-failure threshold."
+    ),
+) -> None:
+    """Health check: verify config, inspect the store, and report per-feed health.
+
+    Exits non-zero if any active feed has exceeded the consecutive-failure
+    threshold (a dead feed). ``--deactivate`` runs the one-time dead-feed pass.
+    """
+    from aib_reader.config import DEFAULT_DEAD_FEED_THRESHOLD, load_config
     from aib_reader.store.sqlite import SqliteStore
 
     cfg = load_config()
@@ -106,13 +114,48 @@ def doctor() -> None:
                 "SELECT name FROM sqlite_master WHERE type='table' ORDER BY name"
             ).fetchall()
         ]
-        store.close()
+        health = store.feed_health()
     except Exception as exc:  # surface, never swallow
         typer.secho(f"store: ERROR — {exc}", fg=typer.colors.RED)
         raise typer.Exit(code=1)
 
     typer.secho(f"store:         OK ({len(tables)} tables: {', '.join(tables)})", fg=typer.colors.GREEN)
-    typer.secho("doctor:        scaffold OK. Per-feed health lands in v0.0b.", fg=typer.colors.GREEN)
+
+    if not health:
+        typer.echo("feeds:         none configured yet — run `aib-reader fetch` to populate.")
+        store.close()
+        return
+
+    dead = [h for h in health if h["active"] and h["consecutive_failures"] >= DEFAULT_DEAD_FEED_THRESHOLD]
+    total_items = sum(h["item_count"] for h in health)
+    typer.echo(f"feeds:         {len(health)} configured, {total_items} items stored")
+
+    # Show the unhealthiest feeds (already sorted by consecutive_failures DESC).
+    shown = [h for h in health if h["consecutive_failures"] > 0][:15]
+    for h in shown:
+        flag = typer.colors.RED if h["consecutive_failures"] >= DEFAULT_DEAD_FEED_THRESHOLD else typer.colors.YELLOW
+        typer.secho(
+            f"  ✗ {h['consecutive_failures']}x  {h['title'] or h['url']}  "
+            f"(last_status={h['last_status']}, {h['last_error']})",
+            fg=flag,
+        )
+
+    if deactivate and dead:
+        for h in dead:
+            store.deactivate_feed(h["id"])
+        typer.secho(f"deactivated:   {len(dead)} dead feeds (>= {DEFAULT_DEAD_FEED_THRESHOLD} failures)", fg=typer.colors.YELLOW)
+        store.close()
+        return
+
+    store.close()
+    if dead:
+        typer.secho(
+            f"doctor:        {len(dead)} feed(s) over the failure threshold. "
+            f"Run `aib-reader doctor --deactivate` to retire them.",
+            fg=typer.colors.RED,
+        )
+        raise typer.Exit(code=1)
+    typer.secho("doctor:        all active feeds healthy.", fg=typer.colors.GREEN)
 
 
 @app.command(name="import-opml")

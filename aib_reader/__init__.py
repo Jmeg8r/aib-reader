@@ -12,10 +12,12 @@ the ``mcp`` SDK. See README.md for the full contract.
 from __future__ import annotations
 
 from aib_reader.api import (
+    PollSummary,
     add_feed,
     fetch_recent_items,
     list_feeds,
     mark_processed,
+    poll_feeds,
     search_items,
 )
 from aib_reader.models import Feed, Item, RecentItemsQuery
@@ -30,8 +32,10 @@ __all__ = [
     "search_items",
     "list_feeds",
     "add_feed",
+    "poll_feeds",
     # contract types
     "Item",
     "Feed",
     "RecentItemsQuery",
+    "PollSummary",
 ]

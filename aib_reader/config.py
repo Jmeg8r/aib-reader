@@ -17,6 +17,7 @@ DEFAULT_USER_AGENT = "aib-reader/0.0.1 (+https://github.com/jmeg8r/aib-reader)"
 DEFAULT_FETCH_CONCURRENCY = 10
 DEFAULT_FETCH_TIMEOUT = 20.0  # seconds, per feed
 DEFAULT_FIRST_FETCH_HORIZON_DAYS = 14  # cap historical items on a feed's first poll
+DEFAULT_DEAD_FEED_THRESHOLD = 5  # consecutive failures before doctor flags/deactivates a feed
 
 
 @dataclass(frozen=True)
