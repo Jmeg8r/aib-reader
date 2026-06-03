@@ -13,6 +13,7 @@ import time
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from typing import Protocol
+from urllib.parse import unquote, urlencode, urlsplit
 
 import feedparser
 import httpx
@@ -23,6 +24,65 @@ from aib_reader.dedup import canonical_url, content_hash, item_surrogate_id
 from aib_reader.models import Feed, Item
 
 log = get_logger(__name__)
+
+
+# WHAT: the legacy Reddit API host that Feedly exports subscriptions against.
+# WHY: api.reddit.com 403s unauthenticated clients (OAuth-only now), and Feedly's
+# paths there (/subreddit/<X>, /search/<q>;<sort>/<uuid>) aren't real RSS endpoints
+# anyway. Reddit serves working public RSS from www.reddit.com. See normalize_feed_url.
+_REDDIT_API_HOST = "api.reddit.com"
+
+
+def normalize_feed_url(url: str) -> str:
+    """Rewrite known unfetchable feed-host quirks to a working RSS endpoint.
+
+    Currently handles Feedly's ``api.reddit.com`` export forms, translating them to
+    the public ``www.reddit.com`` RSS endpoints that actually serve XML:
+
+    - ``api.reddit.com/subreddit/<name>``        -> ``www.reddit.com/r/<name>/.rss``
+    - ``api.reddit.com/subreddit/<name>;top``    -> ``.../r/<name>/top/.rss?t=day``
+    - ``api.reddit.com/subreddit/<name>;<sort>`` -> ``.../r/<name>/<sort>/.rss``
+    - ``api.reddit.com/search/<q>;<sort>/<uuid>``-> ``.../search.rss?q=<q>&sort=<sort>``
+
+    Anything else — including already-correct ``www.reddit.com/.../.rss`` URLs and
+    every non-Reddit feed — is returned unchanged. Pure and side-effect free so the
+    fetcher can log the rewrite and tests can assert it directly.
+    """
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        return url
+
+    if (parts.hostname or "").lower() != _REDDIT_API_HOST:
+        return url
+
+    path = parts.path.strip("/")
+
+    if path.startswith("subreddit/"):
+        # spec is "<name>" or "<name>;<sort>" (Feedly's sort suffix).
+        name, _, sort = path[len("subreddit/"):].partition(";")
+        name = name.strip("/")
+        if not name:
+            return url  # malformed; leave it for the caller to error on
+        if sort == "top":
+            # "top" needs a time window; "day" matches Feedly's default top feed.
+            return f"https://www.reddit.com/r/{name}/top/.rss?t=day"
+        if sort:
+            return f"https://www.reddit.com/r/{name}/{sort}/.rss"
+        return f"https://www.reddit.com/r/{name}/.rss"
+
+    if path.startswith("search/"):
+        # spec is "<query>;<sort>" optionally followed by "/<feedly-uuid>" — drop the uuid.
+        spec = path[len("search/"):].split("/", 1)[0]
+        query_raw, _, sort = spec.partition(";")
+        # Feedly percent-encodes the query (e.g. "Home%20Assistant"); decode then re-encode
+        # cleanly to avoid double-encoding.
+        params = {"q": unquote(query_raw)}
+        if sort:
+            params["sort"] = sort
+        return f"https://www.reddit.com/search.rss?{urlencode(params)}"
+
+    return url
 
 
 @dataclass
@@ -159,8 +219,12 @@ class HttpxFetcher:
         if feed.modified:
             headers["If-Modified-Since"] = feed.modified
 
+        request_url = normalize_feed_url(feed.url)
+        if request_url != feed.url:
+            log.info("normalized feed url %s -> %s", feed.url, request_url)
+
         try:
-            resp = await client.get(feed.url, headers=headers)
+            resp = await client.get(request_url, headers=headers)
         except httpx.HTTPError as exc:
             return FetchResult(feed_id=feed.id, ok=False, error=f"{type(exc).__name__}: {exc}")
 

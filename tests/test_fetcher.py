@@ -9,7 +9,7 @@ from pathlib import Path
 import httpx
 import pytest
 
-from aib_reader.fetcher import HttpxFetcher
+from aib_reader.fetcher import HttpxFetcher, normalize_feed_url
 from aib_reader.models import Feed
 
 FIXTURES = Path(__file__).parent / "fixtures" / "feeds"
@@ -78,6 +78,55 @@ async def test_304_not_modified():
     result = await fetcher.fetch_feed(feed)
     assert result.ok and result.not_modified and result.status == 304
     assert result.items == []
+
+
+@pytest.mark.parametrize(
+    "raw, expected",
+    [
+        # Feedly api.reddit.com export forms -> public www.reddit.com RSS.
+        ("https://api.reddit.com/subreddit/LLM", "https://www.reddit.com/r/LLM/.rss"),
+        (
+            "https://api.reddit.com/subreddit/openclaw;top",
+            "https://www.reddit.com/r/openclaw/top/.rss?t=day",
+        ),
+        (
+            "https://api.reddit.com/subreddit/homelab;best",
+            "https://www.reddit.com/r/homelab/best/.rss",
+        ),
+        (
+            "https://api.reddit.com/search/openclaw;relevance/00000000-0000-0000-0000-000000000000",
+            "https://www.reddit.com/search.rss?q=openclaw&sort=relevance",
+        ),
+        (
+            # percent-encoded query must be decoded, not double-encoded.
+            "https://api.reddit.com/search/Home%20Assistant;relevance/00000000-0000-0000-0000-000000000000",
+            "https://www.reddit.com/search.rss?q=Home+Assistant&sort=relevance",
+        ),
+        # Already-correct and non-Reddit URLs pass through untouched.
+        ("https://www.reddit.com/r/kubernetes/.rss", "https://www.reddit.com/r/kubernetes/.rss"),
+        ("https://example.com/feed.xml", "https://example.com/feed.xml"),
+    ],
+)
+def test_normalize_feed_url(raw, expected):
+    assert normalize_feed_url(raw) == expected
+
+
+@pytest.mark.asyncio
+async def test_fetch_requests_normalized_reddit_url():
+    """The fetcher must GET the rewritten www.reddit.com URL, not api.reddit.com."""
+    seen: dict[str, str] = {}
+
+    def handler(request: httpx.Request) -> httpx.Response:
+        seen["url"] = str(request.url)
+        return httpx.Response(200, content=(FIXTURES / "clean.xml").read_bytes())
+
+    fetcher = _fetcher(handler)
+    # feed.id stays keyed to the original (canonical) yaml URL; only the GET is rewritten.
+    feed = Feed(id="reddit-llm", url="https://api.reddit.com/subreddit/LLM")
+    result = await fetcher.fetch_feed(feed)
+    assert result.ok
+    assert seen["url"] == "https://www.reddit.com/r/LLM/.rss"
+    assert result.feed_id == "reddit-llm"
 
 
 @pytest.mark.asyncio
