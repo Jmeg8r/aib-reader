@@ -115,3 +115,26 @@ def feed_id(url: str) -> str:
     call. Consistent with the content_hash pattern above.
     """
     return hashlib.sha256(canonical_url(url).encode()).hexdigest()[:16]
+
+
+def item_surrogate_id(
+    canonical_url_value: str | None,
+    guid: str | None = None,
+    content_hash_value: str | None = None,
+) -> str:
+    """Stable 16-hex surrogate id for an item: the dedup *survivor* key.
+
+    Hashes the first available identity in priority order:
+    ``canonical_url`` → ``guid`` → ``content_hash``. WHY this is the dedup
+    keystone: two items sharing a canonical_url hash to the SAME id, so a
+    PRIMARY KEY on items(id) + INSERT OR IGNORE collapses exact duplicates with
+    no extra query. Fuzzy ("same story", different URL) duplicates get their own
+    id and instead point ``canonical_item_id`` at the survivor.
+
+    Raises ValueError if no identity is available — an item with no url, guid, or
+    content is not addressable and must not be silently dropped.
+    """
+    basis = (canonical_url_value or "").strip() or (guid or "").strip() or (content_hash_value or "").strip()
+    if not basis:
+        raise ValueError("item_surrogate_id: need at least one of canonical_url, guid, content_hash")
+    return hashlib.sha256(basis.encode("utf-8")).hexdigest()[:16]

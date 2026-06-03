@@ -52,3 +52,35 @@ class Store(Protocol):
 
     def deactivate_feed(self, feed_id: str) -> None:
         ...
+
+    # --- fetch-loop + health support (used by api.poll_feeds and cli.doctor) ---
+
+    def record_fetch_success(
+        self,
+        feed_id: str,
+        *,
+        status: int | None,
+        etag: str | None,
+        modified: str | None,
+        fetched_at: datetime,
+    ) -> None:
+        """Record a successful poll: stamp validators + reset failure counter."""
+        ...
+
+    def record_fetch_failure(self, feed_id: str, *, status: int | None, error: str) -> None:
+        """Record a failed poll: store the error and increment consecutive_failures."""
+        ...
+
+    def feed_health(self) -> list[dict]:
+        """Per-feed health rows for `doctor`."""
+        ...
+
+    def assign_survivor(self, dup_id: str, survivor_id: str) -> None:
+        """Point a fuzzy-duplicate item row at its survivor."""
+        ...
+
+    def recent_items_for_feed_categories(
+        self, categories: list[str], *, since: datetime, limit: int = 200
+    ) -> list[Item]:
+        """Candidate survivor pool (same categories, recent) for fuzzy dedup."""
+        ...
