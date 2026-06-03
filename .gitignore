@@ -31,6 +31,10 @@ dist/
 venv/
 # uv.lock IS committed (reproducible installs) — do not ignore it.
 
+# --- Local generated logs (robustness-gate sample, launchd output) ---
+tasks/robustness-gate.log
+launchd-*.log
+
 # --- Test / coverage ---
 .pytest_cache/
 .coverage

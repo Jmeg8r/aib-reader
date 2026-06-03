@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<!--
+  LaunchAgent: daily v0.0b robustness-gate sample.
+  Runs scripts/robustness-sample.sh at 8:00 AM local time (StartCalendarInterval
+  uses the system local timezone, not UTC). Reference copy lives in the repo;
+  the installed copy is ~/Library/LaunchAgents/com.astgl.aib-reader.robustness.plist.
+
+  Install:    cp this file to ~/Library/LaunchAgents/ then
+              launchctl bootstrap gui/$(id -u) ~/Library/LaunchAgents/com.astgl.aib-reader.robustness.plist
+  Run now:    launchctl kickstart -k gui/$(id -u)/com.astgl.aib-reader.robustness
+  Uninstall:  launchctl bootout gui/$(id -u)/com.astgl.aib-reader.robustness
+-->
+<plist version="1.0">
+<dict>
+    <key>Label</key>
+    <string>com.astgl.aib-reader.robustness</string>
+
+    <key>ProgramArguments</key>
+    <array>
+        <string>/bin/zsh</string>
+        <string>/Users/jamescruce/Projects/aib-reader/scripts/robustness-sample.sh</string>
+    </array>
+
+    <key>WorkingDirectory</key>
+    <string>/Users/jamescruce/Projects/aib-reader</string>
+
+    <!-- launchd starts with a bare PATH; add Homebrew so `uv` and friends resolve. -->
+    <key>EnvironmentVariables</key>
+    <dict>
+        <key>PATH</key>
+        <string>/opt/homebrew/bin:/usr/bin:/bin:/usr/sbin:/sbin</string>
+    </dict>
+
+    <!-- Daily at 08:00 local time. -->
+    <key>StartCalendarInterval</key>
+    <dict>
+        <key>Hour</key>
+        <integer>8</integer>
+        <key>Minute</key>
+        <integer>0</integer>
+    </dict>
+
+    <!-- Don't fire on load/login; the calendar interval drives it. -->
+    <key>RunAtLoad</key>
+    <false/>
+
+    <key>StandardOutPath</key>
+    <string>/Users/jamescruce/.aib-reader/launchd-robustness.out.log</string>
+    <key>StandardErrorPath</key>
+    <string>/Users/jamescruce/.aib-reader/launchd-robustness.err.log</string>
+</dict>
+</plist>
