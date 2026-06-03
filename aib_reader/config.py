@@ -13,7 +13,12 @@ from pathlib import Path
 # WHAT: defaults. WHY: documented, overridable via env (see .env.example).
 DEFAULT_DB_PATH = Path.home() / ".aib-reader" / "store.db"
 DEFAULT_FEEDS_CONFIG = Path("config/feeds.yaml")
-DEFAULT_USER_AGENT = "aib-reader/0.0.1 (+https://github.com/jmeg8r/aib-reader)"
+# WHY: a descriptive, contact-bearing UA — Reddit (and other hosts) rate-limit or
+# 403 generic/blank/bot-looking agents. Reddit's etiquette is a self-identifying UA
+# with a contact, NOT browser spoofing (spoofed UAs are blocked harder).
+DEFAULT_USER_AGENT = (
+    "aib-reader/0.0.1 (RSS aggregator; +https://github.com/jmeg8r/aib-reader)"
+)
 DEFAULT_FETCH_CONCURRENCY = 10
 DEFAULT_FETCH_TIMEOUT = 20.0  # seconds, per feed
 DEFAULT_FIRST_FETCH_HORIZON_DAYS = 14  # cap historical items on a feed's first poll
