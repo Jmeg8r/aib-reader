@@ -53,9 +53,19 @@
       (404s/dead domains/Reddit api.reddit.com 403s); run `doctor --deactivate` to prune,
       then measure transient rate on active feeds.
 
-### Step 4 — v0.0c: MCP server + register
-- [ ] Confirm the 5 tools work end-to-end (already wired to api)
-- [ ] Register user-scope in ~/.claude.json; smoke test from a fresh session
+### Step 4 — v0.0c: MCP server + register  ✅ CODE COMPLETE (branch feat/v0.0c-mcp)
+- [x] 5 tools confirmed end-to-end (already wired to api); `tests/test_mcp_server.py`
+      covers registry + 1:1 delegation + the recent_items arg reorder + JSON shapes
+- [x] Registered user-scope via `claude mcp add -s user aib-reader` with an absolute
+      venv console-script command + `AIB_READER_FEEDS_CONFIG` env override (fixes the
+      relative-path/CWD fragility when launched as a background server). `claude mcp
+      list` → ✓ Connected.
+- [x] Stdio smoke test (`scripts/_mcp_smoke.py`): spawns the real server, initialize,
+      lists 5 tools, recent_items(AI World/7d) + search_items(Anthropic) return real items.
+- [x] Import isolation hardened: `test_library_import_does_not_pull_in_mcp_sdk` now
+      asserts in a fresh subprocess (was order-dependent once a test imports the SDK).
+- [ ] **Action for James:** restart Claude Code, then in a fresh session ask
+      "What's been published about Anthropic this week?" → real items via the MCP tools.
 
 ### Step 5 — Integration handshake
 - [ ] Add aib-reader to aib-pipeline as a uv path dependency; verify zero-overhead contract
