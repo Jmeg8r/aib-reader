@@ -21,10 +21,15 @@ def test_public_contract_is_importable():
 
 
 def test_library_import_does_not_pull_in_mcp_sdk():
-    # The cron imports the library; it must NOT drag in the mcp SDK.
+    # The cron imports the library; it must NOT drag in the mcp SDK. Assert this in a
+    # FRESH interpreter — checking the shared pytest process is unreliable once
+    # test_mcp_server.py (legitimately) imports the SDK in the same run.
+    import subprocess
     import sys
 
-    assert "mcp" not in sys.modules, "importing aib_reader must not import the mcp SDK"
+    code = "import sys, aib_reader; assert 'mcp' not in sys.modules"
+    result = subprocess.run([sys.executable, "-c", code], capture_output=True, text=True)
+    assert result.returncode == 0, f"library import pulled in the mcp SDK:\n{result.stderr}"
 
 
 def test_models_construct():
