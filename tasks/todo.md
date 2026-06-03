@@ -36,13 +36,22 @@
 - [ ] Implement `opml.parse_opml` + `opml.opml_to_feeds_yaml`
 - [ ] Generate `config/feeds.yaml` from the Feedly export (all feeds, categories, AI slice tagged)
 
-### Step 3 — v0.0b: the library (Approach B)
-- [ ] `store/sqlite` query/write methods (recent_items, search, mark_processed, upsert_feeds, ...)
-- [ ] `fetcher` (bounded async httpx, conditional GET, per-feed isolation, UTC timestamps)
-- [ ] `dedup` survivor selection over the store (canonical_url -> content_hash -> fuzzy)
-- [ ] `api.poll_feeds`, `api.add_feed`
-- [ ] First-fetch flood cap (default 14 days)
-- [ ] Robustness gate: transient-failure <15%/ingest, doctor deactivates dead feeds, ingest <5 min
+### Step 3 — v0.0b: the library (Approach B)  ✅ CODE COMPLETE (branch feat/v0.0b-library)
+- [x] `store/sqlite` query/write methods (recent_items, search, mark_processed, upsert_feeds, ...)
+      + schema migration for last_status/consecutive_failures/last_error
+- [x] `fetcher` (bounded async httpx, conditional GET, per-feed isolation, UTC timestamps)
+- [x] `dedup` survivor selection over the store (item_surrogate_id: canonical_url -> guid ->
+      content_hash; exact via id-collision, fuzzy via assign_survivor)
+- [x] `api.poll_feeds`, `api.add_feed`; `cli doctor` health + `--deactivate`
+- [x] First-fetch flood cap (default 14 days)
+- [x] Tests: 66 green (store/fetcher/poll over httpx.MockTransport), ruff clean
+- [x] Dogfood: AI World slice → 104 items/3.5s; full 286-feed ingest → 208 polled /
+      78 failed / 2604 items in **40s** (<5min gate ✓). Contract verified live:
+      search, fetch_recent_items, consumer-scoped idempotent mark_processed.
+- [ ] Robustness gate (a): transient-failure <15%/ingest sustained over 7 daily runs —
+      ONGOING observation. Raw first-pass failure 27% is mostly permanently-dead feeds
+      (404s/dead domains/Reddit api.reddit.com 403s); run `doctor --deactivate` to prune,
+      then measure transient rate on active feeds.
 
 ### Step 4 — v0.0c: MCP server + register
 - [ ] Confirm the 5 tools work end-to-end (already wired to api)
