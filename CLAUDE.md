@@ -65,3 +65,27 @@ When the user's request matches an available skill, invoke it via the Skill tool
 - QA a behavior → `/qa`
 - Code review a diff → `/review`
 - Ship/PR → `/ship`
+
+<!-- COMPOUND:START -->
+## Compound Engineering Setup
+
+Learnings are captured by gstack into `~/.gstack/projects/<slug>/learnings.jsonl` and
+auto-loaded into context at session start. This repo commits only the human-readable
+digest below — the gstack store is the source of truth.
+
+- **View learnings offline:** `./show-learnings.sh` (also `high`, or a type filter)
+- **Record a constraint:** `/gstack-learn add` (write constraints, not observations)
+- **Refresh the table below** after a session's Compound step: `./refresh-digest.sh`
+- **Session logs:** copy `sessions/TEMPLATE.md` → `sessions/SESSION-NNN-<title>.md` and
+  follow Brainstorm → Plan → Work → Review → Compound.
+
+## Known Patterns
+
+<!-- LEARNINGS:START -->
+| Key | Type | Conf | Insight |
+|-----|------|------|---------|
+| `consumer-scoped-cursors` | architecture | 8 | aib-reader uses consumer-scoped processed cursors (processed_items(consumer,item_id)) keyed on the dedup su… |
+
+_1 learning(s) at confidence ≥ 7. Full set: `./show-learnings.sh`._
+<!-- LEARNINGS:END -->
+<!-- COMPOUND:END -->
