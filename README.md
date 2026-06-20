@@ -15,6 +15,17 @@ Not just for one project. The same store is queried by `aib-pipeline` (the daily
 AI-news briefing), and is meant to be reused by UpdateKit, ASTGL article research,
 and any Claude Code agent that needs "what changed on these feeds?"
 
+```mermaid
+flowchart TD
+    Feeds["config/feeds.yaml (canonical)<br/>+ OPML import"] --> Fetcher["fetcher.py<br/>feedparser ingest"]
+    Fetcher --> Dedup["dedup.py<br/>rapidfuzz → canonical survivor"]
+    Dedup --> Store[("Store<br/>local DB cache")]
+    Store --> API["api.py<br/>recent_items · search · mark_processed (consumer-scoped)"]
+    API --> CLI["cli.py (typer)<br/>fetch · list · search · doctor"]
+    API --> MCP["mcp_server.py<br/>5-tool local-stdio MCP"]
+    API --> Consumers["Consumers: aib-pipeline,<br/>UpdateKit, research agents"]
+```
+
 ---
 
 ## The contract (the part other projects depend on)
