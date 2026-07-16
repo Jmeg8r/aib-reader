@@ -11,13 +11,39 @@ from pathlib import Path
 import httpx
 import pytest
 
+import aib_reader._time as time_mod
 import aib_reader.api as api_mod
+import aib_reader.fetcher as fetcher_mod
+import aib_reader.store.sqlite as sqlite_mod
 from aib_reader.api import _flood_cap, poll_feeds
 from aib_reader.fetcher import HttpxFetcher
 from aib_reader.models import Item
 
 FIXTURES = Path(__file__).parent / "fixtures" / "feeds"
 NOW = datetime(2026, 6, 3, 12, 0, tzinfo=timezone.utc)
+
+# WHAT: modules that bind ``now_utc`` by value via ``from ._time import now_utc``.
+# WHY: patching the source (``_time.now_utc``) alone would NOT reach these copies.
+_NOW_UTC_BINDINGS = (time_mod, api_mod, fetcher_mod, sqlite_mod)
+
+
+@pytest.fixture(autouse=True)
+def frozen_clock(monkeypatch):
+    """Freeze ``now_utc()`` to ``NOW`` for every test in this module.
+
+    WHY: these tests build "fresh" items relative to ``NOW`` (2026-06-03), but
+    ``poll_feeds``'s first-fetch flood cap and ``parse_since`` both measure
+    against the *real* clock. Once wall-clock time drifts past the 14-day
+    horizon, the fresh fixtures get flood-capped away and the assertions rot.
+    Pinning the clock makes these tests deterministic regardless of the run
+    date. Test-only: the real ``poll_feeds`` (robustness sampler, 4am cron)
+    runs the unpatched functions and is unaffected."""
+
+    def _frozen() -> datetime:
+        return NOW
+
+    for module in _NOW_UTC_BINDINGS:
+        monkeypatch.setattr(module, "now_utc", _frozen)
 
 
 def _route(request: httpx.Request) -> httpx.Response:
