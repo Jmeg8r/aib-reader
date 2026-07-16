@@ -101,6 +101,26 @@ def test_delete_feed_repoints_cross_feed_duplicate_survivor(store):
     assert [it.id for it in recent] == ["dup"]  # promoted to its own survivor, still visible
 
 
+def test_delete_feed_collapses_multi_duplicate_cluster_to_one_survivor(store):
+    # Regression: TWO duplicates in different other feeds point at a survivor in
+    # the deleted feed. The cluster must collapse to ONE elected survivor (the
+    # story stays a single entry), not split into two independent survivors.
+    store.upsert_feeds([
+        Feed(id="f1", url="https://a.com/rss", categories=["AI World"]),
+        Feed(id="f2", url="https://b.com/rss", categories=["AI World"]),
+        Feed(id="f3", url="https://c.com/rss", categories=["AI World"]),
+    ])
+    store.add_item(_item("surv", "f1", "Anthropic ships Claude 5", canonical_url="https://a.com/x"))
+    store.add_item(_item("dup_b", "f2", "Anthropic ships Claude 5 today", canonical_url="https://b.com/y"))
+    store.add_item(_item("dup_c", "f3", "Anthropic ships Claude 5 now", canonical_url="https://c.com/z"))
+    store.assign_survivor("dup_b", "surv")
+    store.assign_survivor("dup_c", "surv")
+    store.delete_feed("f1")
+    recent = store.recent_items(since=NOW - timedelta(days=1), limit=50)
+    # Exactly one survivor for the cluster: min("dup_b", "dup_c") == "dup_b".
+    assert [it.id for it in recent] == ["dup_b"]
+
+
 # --- items + queries -------------------------------------------------------
 
 

@@ -250,6 +250,21 @@ def remove_feed(url: str) -> bool:
     remaining = [f for f in feeds if f.id != match.id]
     write_feeds_yaml(remaining, cfg.feeds_config, source="remove_feed")
     store = _store(cfg)
-    store.delete_feed(match.id)
+    try:
+        store.delete_feed(match.id)
+    except Exception:
+        # feeds.yaml is canonical and was already rewritten without the feed. If
+        # the store delete fails, the config would say "gone" while the store
+        # still holds the feed + its items (and nothing self-heals it). Roll the
+        # YAML back to the pre-remove list and re-raise — never leave the two
+        # inconsistent, never swallow the error. Backend-agnostic on purpose
+        # (api.py talks to the Store protocol, not sqlite).
+        write_feeds_yaml(feeds, cfg.feeds_config, source="remove_feed")
+        log.exception(
+            "remove_feed: store.delete_feed failed for %s (id=%s); rolled back feeds.yaml",
+            url,
+            match.id,
+        )
+        raise
     log.info("remove_feed: removed %s (id=%s)", url, match.id)
     return True

@@ -232,24 +232,41 @@ class SqliteStore:
         the feed's ``feed_categories``, ``items``, and (transitively) their
         ``processed_items`` cursor rows.
 
-        WHY the pre-delete UPDATE: ``items.canonical_item_id`` (the dedup survivor
-        pointer) is a bare column with NO foreign key, unlike ``feed_id``. So a
-        fuzzy *duplicate* living in ANOTHER, still-active feed can point at a
-        survivor that lives in THIS feed. Cascade-deleting this feed would drop
-        that survivor and orphan the duplicate — per ``_SURVIVOR_PREDICATE`` it is
-        then neither NULL nor self-referencing, so it silently vanishes from every
-        query forever. Re-home those about-to-be-orphaned duplicates onto
-        themselves (promote to their own survivor) BEFORE the cascade fires.
+        WHY the pre-delete repoint: ``items.canonical_item_id`` (the dedup survivor
+        pointer) is a bare column with NO foreign key, unlike ``feed_id``. So fuzzy
+        *duplicates* living in OTHER, still-active feeds can point at a survivor
+        that lives in THIS feed. Cascade-deleting this feed would drop that survivor
+        and orphan those duplicates — per ``_SURVIVOR_PREDICATE`` they'd then be
+        neither NULL nor self-referencing, silently vanishing from every query.
+
+        For each orphaned cluster, elect ONE deterministic replacement survivor (the
+        min id among the cluster's surviving duplicates) and repoint the whole
+        cluster to it — so a story that was deduped to a single entry stays a single
+        entry, instead of every duplicate becoming its own survivor (which would
+        make the story reappear once per duplicate). Snapshot the mapping in Python
+        first, so the repoint never reads its own partial writes.
         """
         conn = self.connect()
-        conn.execute(
+        # Impacted duplicates: rows in OTHER feeds whose survivor lives in this feed.
+        impacted = conn.execute(
             """
-            UPDATE items SET canonical_item_id = id
+            SELECT id, canonical_item_id FROM items
             WHERE feed_id != ?
               AND canonical_item_id IN (SELECT id FROM items WHERE feed_id = ?)
             """,
             (feed_id, feed_id),
-        )
+        ).fetchall()
+        # Group by dying survivor; elect the min-id member as the cluster's new
+        # survivor and repoint every member (incl. itself) to it.
+        clusters: dict[str, list[str]] = {}
+        for row in impacted:
+            clusters.setdefault(row["canonical_item_id"], []).append(row["id"])
+        for member_ids in clusters.values():
+            replacement = min(member_ids)
+            conn.executemany(
+                "UPDATE items SET canonical_item_id = ? WHERE id = ?",
+                [(replacement, item_id) for item_id in member_ids],
+            )
         conn.execute("DELETE FROM feeds WHERE id = ?", (feed_id,))
         conn.commit()
         log.info("delete_feed: hard-deleted feed %s (items cascade-deleted)", feed_id)
