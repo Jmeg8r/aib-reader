@@ -22,7 +22,15 @@ PROJECT = "/Users/jamescruce/Projects/aib-reader"
 COMMAND = f"{PROJECT}/.venv/bin/aib-reader-mcp"
 FEEDS = f"{PROJECT}/config/feeds.yaml"
 
-EXPECTED = {"list_feeds", "recent_items", "search_items", "mark_processed", "add_feed"}
+EXPECTED = {
+    "list_feeds",
+    "recent_items",
+    "search_items",
+    "mark_processed",
+    "add_feed",
+    "remove_feed",
+    "poll_feeds",
+}
 
 
 def _items(result) -> list:
