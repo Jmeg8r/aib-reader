@@ -73,6 +73,34 @@ def test_deactivate_feed(store):
     assert store.list_feeds()[0].active is False
 
 
+def test_delete_feed_removes_feed_and_items(store):
+    store.upsert_feeds([Feed(id="f1", url="https://e.com/rss", categories=["AI World"])])
+    store.add_item(_item("i1", "f1", "x"))
+    store.mark_processed(["i1"], consumer="c1")
+    store.delete_feed("f1")
+    assert store.list_feeds() == []
+    assert store.recent_items(since=NOW - timedelta(days=1), limit=50) == []
+    # processed_items cascades away with the deleted item (item_id FK ON DELETE CASCADE).
+    remaining = store.connect().execute("SELECT COUNT(*) AS n FROM processed_items").fetchone()["n"]
+    assert remaining == 0
+
+
+def test_delete_feed_repoints_cross_feed_duplicate_survivor(store):
+    # Regression: a fuzzy duplicate in ANOTHER feed points at a survivor that lives
+    # in the feed being deleted. Without the pre-delete repoint, the cascade drops
+    # the survivor and the duplicate silently vanishes from every query.
+    store.upsert_feeds([
+        Feed(id="f1", url="https://a.com/rss", categories=["AI World"]),
+        Feed(id="f2", url="https://b.com/rss", categories=["AI World"]),
+    ])
+    store.add_item(_item("surv", "f1", "Anthropic ships Claude 5", canonical_url="https://a.com/x"))
+    store.add_item(_item("dup", "f2", "Anthropic ships Claude 5 today", canonical_url="https://b.com/y"))
+    store.assign_survivor("dup", "surv")  # dup (in f2) -> survivor in f1
+    store.delete_feed("f1")
+    recent = store.recent_items(since=NOW - timedelta(days=1), limit=50)
+    assert [it.id for it in recent] == ["dup"]  # promoted to its own survivor, still visible
+
+
 # --- items + queries -------------------------------------------------------
 
 

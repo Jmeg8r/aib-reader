@@ -18,6 +18,7 @@ from aib_reader.api import (
     list_feeds,
     mark_processed,
     poll_feeds,
+    remove_feed,
     search_items,
 )
 from aib_reader.models import Feed, Item, RecentItemsQuery
@@ -32,6 +33,7 @@ __all__ = [
     "search_items",
     "list_feeds",
     "add_feed",
+    "remove_feed",
     "poll_feeds",
     # contract types
     "Item",

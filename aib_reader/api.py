@@ -221,3 +221,35 @@ def add_feed(url: str, category: str | None = None) -> Feed:
     store.upsert_feeds([result_feed])
     log.info("add_feed: %s (category=%s)", url, category)
     return result_feed
+
+
+def remove_feed(url: str) -> bool:
+    """Remove a feed from the canonical ``config/feeds.yaml`` and hard-delete it
+    (and its items) from the store. Matched by canonical URL, exactly like
+    ``add_feed`` — the inverse operation.
+
+    Idempotent: removing a URL with no matching feed is a no-op that returns
+    ``False`` (not an error). Returns ``True`` when a feed was found and removed.
+    """
+    if not url or not url.strip():
+        raise ValueError("`url` must be a non-empty feed URL")
+    url = url.strip()
+
+    from aib_reader.dedup import canonical_url
+    from aib_reader.opml import load_feeds_yaml, write_feeds_yaml
+
+    cfg = load_config()
+    feeds = load_feeds_yaml(cfg.feeds_config) if cfg.feeds_config.exists() else []
+
+    target_canon = canonical_url(url)
+    match = next((f for f in feeds if canonical_url(f.url) == target_canon), None)
+    if match is None:
+        log.info("remove_feed: no feed matches %s — no-op", url)
+        return False
+
+    remaining = [f for f in feeds if f.id != match.id]
+    write_feeds_yaml(remaining, cfg.feeds_config, source="remove_feed")
+    store = _store(cfg)
+    store.delete_feed(match.id)
+    log.info("remove_feed: removed %s (id=%s)", url, match.id)
+    return True

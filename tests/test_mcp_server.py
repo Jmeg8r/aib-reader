@@ -1,21 +1,32 @@
 """Tests for the MCP server wrapper.
 
 This is the ONE test module that imports the `mcp` SDK — mirroring how
-`mcp_server.py` is the only library module that does. Verifies the 5 tools are
+`mcp_server.py` is the only library module that does. Verifies the 7 tools are
 registered and each delegates 1:1 to `aib_reader.api`, returning JSON-safe shapes
-(plain dict/list/int — never pydantic objects leaking over the wire)."""
+(plain dict/list/int/bool — never pydantic or dataclass objects leaking over the
+wire)."""
 
 from __future__ import annotations
 
 import asyncio
+import dataclasses
 
 from aib_reader import mcp_server
+from aib_reader.api import PollSummary
 from aib_reader.models import Feed, Item
 
-EXPECTED_TOOLS = {"list_feeds", "recent_items", "search_items", "mark_processed", "add_feed"}
+EXPECTED_TOOLS = {
+    "list_feeds",
+    "recent_items",
+    "search_items",
+    "mark_processed",
+    "add_feed",
+    "remove_feed",
+    "poll_feeds",
+}
 
 
-def test_exactly_five_tools_registered():
+def test_exactly_seven_tools_registered():
     tools = asyncio.run(mcp_server.mcp.list_tools())
     assert {t.name for t in tools} == EXPECTED_TOOLS
 
@@ -82,3 +93,31 @@ def test_add_feed_delegates_and_returns_dict(monkeypatch):
     out = mcp_server.add_feed("https://new.example.com/rss", category="tech")
     assert isinstance(out, dict) and out["url"] == "https://new.example.com/rss"
     assert captured == {"url": "https://new.example.com/rss", "category": "tech"}
+
+
+def test_remove_feed_delegates_and_returns_bool(monkeypatch):
+    captured = {}
+
+    def fake(url):
+        captured.update(url=url)
+        return True
+
+    monkeypatch.setattr(mcp_server.api, "remove_feed", fake)
+    out = mcp_server.remove_feed("https://old.example.com/rss")
+    assert out is True
+    assert captured == {"url": "https://old.example.com/rss"}
+
+
+def test_poll_feeds_delegates_and_returns_plain_dict(monkeypatch):
+    captured = {}
+
+    def fake(categories=None):
+        captured.update(categories=categories)
+        return PollSummary(feeds_polled=3, feeds_failed=1, new_items=7)
+
+    monkeypatch.setattr(mcp_server.api, "poll_feeds", fake)
+    out = mcp_server.poll_feeds(categories=["AI World"])
+    # A plain dict crosses the wire — the PollSummary dataclass must not leak.
+    assert out == {"feeds_polled": 3, "feeds_failed": 1, "new_items": 7}
+    assert not dataclasses.is_dataclass(out)
+    assert captured == {"categories": ["AI World"]}

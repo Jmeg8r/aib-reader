@@ -12,6 +12,8 @@ Register user-scope in ~/.claude.json:
 
 from __future__ import annotations
 
+import dataclasses
+
 from mcp.server.fastmcp import FastMCP
 
 from aib_reader import api
@@ -55,6 +57,20 @@ def add_feed(url: str, category: str | None = None) -> dict:
     """Add a feed to config/feeds.yaml and the store."""
     log.info("mcp:add_feed url=%s category=%s", url, category)
     return api.add_feed(url, category=category).model_dump(mode="json")
+
+
+@mcp.tool()
+def remove_feed(url: str) -> bool:
+    """Remove a feed from config/feeds.yaml and hard-delete it (and its items) from the store."""
+    log.info("mcp:remove_feed url=%s", url)
+    return api.remove_feed(url)
+
+
+@mcp.tool()
+def poll_feeds(categories: list[str] | None = None) -> dict:
+    """Network refresh: fetch active feeds (optionally filtered to categories), dedup, store new items."""
+    log.info("mcp:poll_feeds categories=%s", categories)
+    return dataclasses.asdict(api.poll_feeds(categories=categories))
 
 
 def main() -> None:

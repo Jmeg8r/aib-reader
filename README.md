@@ -48,7 +48,7 @@ uv run aib-reader doctor           # per-feed health; deactivate permanently-dea
 
 ## MCP (for interactive Claude Code / agents)
 
-A local-stdio MCP server exposes the same functions as five tools. Each tool maps
+A local-stdio MCP server exposes the same functions as seven tools. Each tool maps
 1:1 to a library function (`mcp_server.py` imports `api.py`, never the reverse — the
 MCP SDK stays out of the library import path so the cron stays zero-overhead):
 
@@ -59,6 +59,8 @@ MCP SDK stays out of the library import path so the cron stays zero-overhead):
 | `search_items(query, limit)` | `search_items(query, limit)` |
 | `mark_processed(item_ids, consumer)` | `mark_processed(item_ids, consumer)` |
 | `add_feed(url, category)` | `add_feed(url, category)` |
+| `remove_feed(url)` | `remove_feed(url)` |
+| `poll_feeds(categories)` | `poll_feeds(categories)` |
 
 Register it user-scope in `~/.claude.json`:
 

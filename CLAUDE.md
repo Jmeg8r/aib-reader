@@ -25,7 +25,7 @@ from aib_reader import fetch_recent_items, mark_processed, Item
 ## Scope (v1)
 
 In: ingest all OPML feeds, dedup, query by category/time/keyword, `mark_processed`,
-typer CLI (`fetch`/`list`/`search`/`doctor`), the 5-tool MCP server.
+typer CLI (`fetch`/`list`/`search`/`doctor`), the 7-tool MCP server.
 Out (v1): web UI, per-item read/star state, AI scoring/enrichment, HTTP MCP transport,
 a Miniflux/FreshRSS backend (keep the `Store` interface clean for it later), PyPI.
 

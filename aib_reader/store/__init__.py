@@ -53,6 +53,10 @@ class Store(Protocol):
     def deactivate_feed(self, feed_id: str) -> None:
         ...
 
+    def delete_feed(self, feed_id: str) -> None:
+        """Hard-delete a feed and its items (cascades to categories + cursors)."""
+        ...
+
     # --- fetch-loop + health support (used by api.poll_feeds and cli.doctor) ---
 
     def record_fetch_success(

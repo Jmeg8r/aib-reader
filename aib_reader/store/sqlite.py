@@ -227,6 +227,33 @@ class SqliteStore:
         conn.commit()
         log.info("deactivated feed %s", feed_id)
 
+    def delete_feed(self, feed_id: str) -> None:
+        """Hard-delete a feed and all its items. FK ``ON DELETE CASCADE`` removes
+        the feed's ``feed_categories``, ``items``, and (transitively) their
+        ``processed_items`` cursor rows.
+
+        WHY the pre-delete UPDATE: ``items.canonical_item_id`` (the dedup survivor
+        pointer) is a bare column with NO foreign key, unlike ``feed_id``. So a
+        fuzzy *duplicate* living in ANOTHER, still-active feed can point at a
+        survivor that lives in THIS feed. Cascade-deleting this feed would drop
+        that survivor and orphan the duplicate — per ``_SURVIVOR_PREDICATE`` it is
+        then neither NULL nor self-referencing, so it silently vanishes from every
+        query forever. Re-home those about-to-be-orphaned duplicates onto
+        themselves (promote to their own survivor) BEFORE the cascade fires.
+        """
+        conn = self.connect()
+        conn.execute(
+            """
+            UPDATE items SET canonical_item_id = id
+            WHERE feed_id != ?
+              AND canonical_item_id IN (SELECT id FROM items WHERE feed_id = ?)
+            """,
+            (feed_id, feed_id),
+        )
+        conn.execute("DELETE FROM feeds WHERE id = ?", (feed_id,))
+        conn.commit()
+        log.info("delete_feed: hard-deleted feed %s (items cascade-deleted)", feed_id)
+
     def record_fetch_success(
         self,
         feed_id: str,
