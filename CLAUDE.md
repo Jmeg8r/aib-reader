@@ -31,8 +31,7 @@ a Miniflux/FreshRSS backend (keep the `Store` interface clean for it later), PyP
 
 ## Engineering rules (this repo)
 
-- **Python:** `snake_case` funcs/vars, `PascalCase` classes, `SCREAMING_SNAKE_CASE`
-  constants. Type hints everywhere. `typing.Protocol` for `Store`/`Fetcher`.
+- **Type hints everywhere.** `typing.Protocol` for `Store`/`Fetcher`.
 - **Logging is mandatory.** Use the stdlib `logging` setup in `aib_reader/_logging.py`.
   Log every fetch, every dedup decision, every MCP tool call. No silent failures.
 - **No bare `except:`.** Catch specific exceptions; per-feed errors are isolated and
@@ -45,8 +44,6 @@ a Miniflux/FreshRSS backend (keep the `Store` interface clean for it later), PyP
 
 ## Workflow
 
-- Feature/chore branches (`feat/`, `fix/`, `chore/`, `docs/`). **Never commit to `main`
-  directly; never push to `main`.** Conventional, atomic commits.
 - gitignore secrets FIRST. The store DB and `.env` are gitignored.
 - Verify before done: `uv run pytest` green, `uv run aib-reader doctor` clean, and the
   contract demonstrated end-to-end before marking a milestone complete.
