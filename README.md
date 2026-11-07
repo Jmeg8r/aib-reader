@@ -7,9 +7,9 @@ feeds, deduplicates across them, and answers "what's new on these sources?" quer
 by category, time window, and keyword. Built because Feedly gates its developer API
 behind an enterprise tier — so we own the aggregation layer instead.
 
-> Status: **v0.0 — scaffold.** Public API and CLI surface are stubbed; the storage,
-> fetch, and dedup logic land in v0.0b. See [`tasks/todo.md`](tasks/todo.md) for the
-> build sequence and the design doc referenced there for the full rationale.
+> Status: **v0.0.1.** The library (SQLite store, async fetcher, dedup), the CLI, and the
+> MCP server are implemented. See [`tasks/todo.md`](tasks/todo.md) for the build sequence,
+> open gates, and the design doc referenced there for the full rationale.
 
 Not just for one project. The same store is queried by `aib-pipeline` (the daily
 AI-news briefing), and is meant to be reused by UpdateKit, ASTGL article research,
@@ -17,14 +17,24 @@ and any Claude Code agent that needs "what changed on these feeds?"
 
 ```mermaid
 flowchart TD
-    Feeds["config/feeds.yaml (canonical)<br/>+ OPML import"] --> Fetcher["fetcher.py<br/>feedparser ingest"]
+    Feeds["config/feeds.yaml (canonical)<br/>+ OPML import (opml.py)"] --> Fetcher["fetcher.py<br/>httpx + feedparser ingest"]
     Fetcher --> Dedup["dedup.py<br/>rapidfuzz → canonical survivor"]
-    Dedup --> Store[("Store<br/>local DB cache")]
+    Dedup --> Store[("store/sqlite.py<br/>SQLite cache")]
     Store --> API["api.py<br/>recent_items · search · mark_processed (consumer-scoped)"]
-    API --> CLI["cli.py (typer)<br/>fetch · list · search · doctor"]
-    API --> MCP["mcp_server.py<br/>5-tool local-stdio MCP"]
+    API --> CLI["cli.py (typer)<br/>fetch · list · search · doctor · import-opml"]
+    API --> MCP["mcp_server.py<br/>7-tool local-stdio MCP"]
     API --> Consumers["Consumers: aib-pipeline,<br/>UpdateKit, research agents"]
 ```
+
+<!-- archify:start -->
+### System map
+
+![System map](docs/diagrams/aib-reader.architecture.svg)
+
+Interactive: [`docs/diagrams/aib-reader.architecture.html`](docs/diagrams/aib-reader.architecture.html)
+— search, trace routes, compare roles. Source of truth is the typed IR
+[`aib-reader.architecture.json`](docs/diagrams/aib-reader.architecture.json); edit that, never the HTML.
+<!-- archify:end -->
 
 ---
 
@@ -51,10 +61,12 @@ mark_processed([i.id for i in items], consumer="aib-pipeline")
 ## CLI
 
 ```bash
-uv run aib-reader fetch            # poll all active feeds, store + dedup new items
-uv run aib-reader list             # list configured feeds (URL, category, last fetch)
+uv run aib-reader fetch            # poll all active feeds, store + dedup new items (-c <category> to filter)
+uv run aib-reader list             # list configured feeds (title, categories, URL)
 uv run aib-reader search "Anthropic"   # keyword search across stored items
-uv run aib-reader doctor           # per-feed health; deactivate permanently-dead feeds
+uv run aib-reader doctor           # per-feed health; --deactivate retires dead feeds
+uv run aib-reader import-opml <export.opml>   # convert a Feedly OPML export to config/feeds.yaml
+uv run aib-reader version
 ```
 
 ## MCP (for interactive Claude Code / agents)
@@ -93,6 +105,20 @@ uv run pytest
 
 The feed list is `config/feeds.yaml` (generated from a Feedly OPML export; see
 `config/feeds.yaml.example`). The SQLite store lives at `~/.aib-reader/store.db`.
+Override paths and fetch tunables with `AIB_READER_DB_PATH`, `AIB_READER_FEEDS_CONFIG`,
+`AIB_READER_USER_AGENT`, `AIB_READER_FETCH_CONCURRENCY`, `AIB_READER_FETCH_TIMEOUT`, and
+`AIB_READER_FIRST_FETCH_HORIZON_DAYS` (defaults in `aib_reader/config.py`).
+
+## Project structure
+
+| Path | Purpose |
+|---|---|
+| `aib_reader/` | Library: `api.py` (public contract), `models.py`, `fetcher.py`, `dedup.py`, `opml.py`, `config.py`, `cli.py`, `mcp_server.py` |
+| `aib_reader/store/` | `Store` protocol and the SQLite backend |
+| `config/` | `feeds.yaml.example` (the real `feeds.yaml` is gitignored) |
+| `scripts/` | MCP smoke test and the robustness-gate sampler (launchd plist) |
+| `tests/` | pytest suite with fixture OPML and ugly-feed XML |
+| `docs/`, `tasks/`, `sessions/` | Horizon evaluation and research, build plan, session logs |
 
 ## Design
 

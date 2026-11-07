@@ -1,0 +1,263 @@
+{
+  "schema_version": 1,
+  "diagram_type": "architecture",
+  "meta": {
+    "title": "aib-reader System Map",
+    "output": "aib-reader.architecture.html",
+    "quality_profile": "showcase"
+  },
+  "components": [
+    {
+      "id": "opml",
+      "type": "backend",
+      "label": "OPML import",
+      "sublabel": "opml.py",
+      "pos": [
+        40,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "yaml",
+      "type": "database",
+      "label": "feeds.yaml",
+      "sublabel": "canonical feed list",
+      "pos": [
+        250,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "api",
+      "type": "backend",
+      "label": "Public API",
+      "sublabel": "api.py contract",
+      "pos": [
+        460,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ],
+      "tag": "no mcp import"
+    },
+    {
+      "id": "store",
+      "type": "database",
+      "label": "SqliteStore",
+      "sublabel": "~/.aib-reader/store.db",
+      "pos": [
+        670,
+        300
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "cli",
+      "type": "frontend",
+      "label": "CLI",
+      "sublabel": "cli.py (typer)",
+      "pos": [
+        250,
+        60
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "consumers",
+      "type": "external",
+      "label": "Library consumers",
+      "sublabel": "aib-pipeline, agents",
+      "pos": [
+        460,
+        60
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "mcp",
+      "type": "frontend",
+      "label": "MCP server",
+      "sublabel": "7 stdio tools",
+      "pos": [
+        670,
+        60
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "fetcher",
+      "type": "backend",
+      "label": "Fetcher",
+      "sublabel": "httpx + feedparser",
+      "pos": [
+        250,
+        540
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "dedup",
+      "type": "backend",
+      "label": "Dedup",
+      "sublabel": "rapidfuzz survivor",
+      "pos": [
+        460,
+        540
+      ],
+      "size": [
+        140,
+        60
+      ]
+    },
+    {
+      "id": "feeds",
+      "type": "external",
+      "label": "RSS / Atom feeds",
+      "sublabel": "remote hosts",
+      "pos": [
+        40,
+        540
+      ],
+      "size": [
+        140,
+        60
+      ]
+    }
+  ],
+  "boundaries": [
+    {
+      "kind": "region",
+      "label": "Local machine",
+      "wraps": [
+        "opml",
+        "yaml",
+        "api",
+        "store",
+        "cli",
+        "mcp",
+        "fetcher",
+        "dedup"
+      ]
+    }
+  ],
+  "connections": [
+    {
+      "id": "opml-to-yaml",
+      "from": "opml",
+      "to": "yaml",
+      "label": "write"
+    },
+    {
+      "id": "yaml-to-api",
+      "from": "yaml",
+      "to": "api",
+      "label": "load feeds"
+    },
+    {
+      "id": "api-to-store",
+      "from": "api",
+      "to": "store",
+      "label": "SQL",
+      "variant": "emphasis"
+    },
+    {
+      "id": "consumers-to-api",
+      "from": "consumers",
+      "to": "api",
+      "label": "import",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDy": 24
+    },
+    {
+      "id": "cli-to-api",
+      "from": "cli",
+      "to": "api",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "mcp-to-api",
+      "from": "mcp",
+      "to": "api",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "api-to-fetcher",
+      "from": "api",
+      "to": "fetcher",
+      "label": "poll",
+      "fromSide": "bottom",
+      "toSide": "top"
+    },
+    {
+      "id": "fetcher-to-feeds",
+      "from": "fetcher",
+      "to": "feeds",
+      "label": "GET",
+      "variant": "dashed"
+    },
+    {
+      "id": "api-to-dedup",
+      "from": "api",
+      "to": "dedup",
+      "label": "same story?",
+      "fromSide": "bottom",
+      "toSide": "top",
+      "labelDx": 50,
+      "labelDy": 40
+    }
+  ],
+  "cards": [
+    {
+      "dot": "cyan",
+      "title": "Ingest",
+      "items": [
+        "poll_feeds loads feeds.yaml, fetches active feeds concurrently",
+        "Conditional GET; one bad feed never aborts the run"
+      ]
+    },
+    {
+      "dot": "emerald",
+      "title": "Dedup and store",
+      "items": [
+        "Exact dedup by surrogate id, fuzzy by title within 3 days",
+        "Processed cursors are consumer-scoped"
+      ]
+    },
+    {
+      "dot": "rose",
+      "title": "Surfaces",
+      "items": [
+        "Library import is the primary contract",
+        "CLI and MCP are thin wrappers over api.py"
+      ]
+    }
+  ]
+}
