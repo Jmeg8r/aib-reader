@@ -56,3 +56,8 @@ htmlcov/
 .idea/
 .vscode/
 *.swp
+.coderabbit.local.yaml
+.lefthook-local.yml
+lefthook-local.yml
+.cr-cache/
+*.cr-review.md
