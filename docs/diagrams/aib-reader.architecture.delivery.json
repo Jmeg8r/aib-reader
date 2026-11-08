@@ -1,0 +1,17 @@
+{
+  "schemaVersion": 1,
+  "receiptId": "272e85a9-6c78-4e09-9154-5682713af0c7",
+  "status": "current",
+  "command": "deliver",
+  "type": "architecture",
+  "input": "/Volumes/Projects/Repositories/.worktrees/aib-reader-doco-20261106/docs/diagrams/aib-reader.architecture.json",
+  "output": "/Volumes/Projects/Repositories/.worktrees/aib-reader-doco-20261106/docs/diagrams/aib-reader.architecture.html",
+  "specification": {
+    "sha256": "9efbae002a622794ae341a9dd73790b72d11b64a4c5d1f3c943ef1f3764f4627",
+    "bytes": 4679
+  },
+  "artifact": {
+    "sha256": "cd622f1a19a3cd4dda9f48d78a8db85544538a4b539fbc3ce984cf76c9783200",
+    "bytes": 825152
+  }
+}

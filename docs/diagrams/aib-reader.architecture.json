@@ -14,7 +14,7 @@
       "sublabel": "opml.py",
       "pos": [
         40,
-        300
+        460
       ],
       "size": [
         140,
@@ -28,7 +28,7 @@
       "sublabel": "canonical feed list",
       "pos": [
         250,
-        300
+        460
       ],
       "size": [
         140,
@@ -42,7 +42,7 @@
       "sublabel": "api.py contract",
       "pos": [
         460,
-        300
+        460
       ],
       "size": [
         140,
@@ -57,7 +57,7 @@
       "sublabel": "~/.aib-reader/store.db",
       "pos": [
         670,
-        300
+        460
       ],
       "size": [
         140,
@@ -71,7 +71,7 @@
       "sublabel": "cli.py (typer)",
       "pos": [
         250,
-        60
+        220
       ],
       "size": [
         140,
@@ -99,7 +99,7 @@
       "sublabel": "7 stdio tools",
       "pos": [
         670,
-        60
+        220
       ],
       "size": [
         140,
@@ -113,7 +113,7 @@
       "sublabel": "httpx + feedparser",
       "pos": [
         250,
-        540
+        700
       ],
       "size": [
         140,
@@ -127,7 +127,7 @@
       "sublabel": "rapidfuzz survivor",
       "pos": [
         460,
-        540
+        700
       ],
       "size": [
         140,
@@ -140,8 +140,8 @@
       "label": "RSS / Atom feeds",
       "sublabel": "remote hosts",
       "pos": [
-        40,
-        540
+        250,
+        860
       ],
       "size": [
         140,
